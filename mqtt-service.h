@@ -35,14 +35,15 @@
 #define MQTT_FLAG_READY              2
 #define MQTT_FLAG_EXIT               4
 
-#define MQTT_EVENT_TYPE_NONE         0
-#define MQTT_EVENT_TYPE_CONNECTED    1
-#define MQTT_EVENT_TYPE_DISCONNECTED 2
-#define MQTT_EVENT_TYPE_SUBSCRIBED   3
-#define MQTT_EVENT_TYPE_UNSUBSCRIBED 4
-#define MQTT_EVENT_TYPE_PUBLISH      5
-#define MQTT_EVENT_TYPE_PUBLISHED    6
-#define MQTT_EVENT_TYPE_EXITED       7
+#define MQTT_EVENT_TYPE_NONE                  0
+#define MQTT_EVENT_TYPE_CONNECTED             1
+#define MQTT_EVENT_TYPE_DISCONNECTED          2
+#define MQTT_EVENT_TYPE_SUBSCRIBED            3
+#define MQTT_EVENT_TYPE_UNSUBSCRIBED          4
+#define MQTT_EVENT_TYPE_PUBLISH               5
+#define MQTT_EVENT_TYPE_PUBLISHED             6
+#define MQTT_EVENT_TYPE_EXITED                7
+#define MQTT_EVENT_TYPE_PUBLISH_CONTINUATION  8
 
 typedef struct mqtt_event_data_t
 {
@@ -51,6 +52,7 @@ typedef struct mqtt_event_data_t
   const char* data;
   uint16_t topic_length;
   uint16_t data_length;
+  uint16_t data_offset;
 
 } mqtt_event_data_t;
 
@@ -150,6 +152,10 @@ static inline int mqtt_event_is_exited(void* data)
 {
   return ((mqtt_event_data_t*)data)->type == MQTT_EVENT_TYPE_EXITED;
 }
+static inline int mqtt_event_is_publish_continuation(void* data)
+{
+  return ((mqtt_event_data_t*)data)->type == MQTT_EVENT_TYPE_PUBLISH_CONTINUATION;
+}
 
 static inline const char* mqtt_event_get_topic(void* data)
 {
@@ -166,6 +172,10 @@ static inline const char* mqtt_event_get_data(void* data)
 static inline uint16_t mqtt_event_get_data_length(void* data)
 {
   return ((mqtt_event_data_t*)data)->data_length;
+}
+static inline uint16_t mqtt_event_get_data_offset(void* data)
+{
+  return ((mqtt_event_data_t*)data)->data_offset;
 }
 
 

@@ -54,6 +54,8 @@ typedef struct mqtt_state_t
   uint8_t* out_buffer;
   int in_buffer_length;
   int out_buffer_length;
+  uint16_t message_length;
+  uint16_t message_length_read;
   mqtt_message_t* outbound_message;
   mqtt_connection_t mqtt_connection;
   uint16_t pending_msg_id;
@@ -202,6 +204,21 @@ static void deliver_publish(mqtt_state_t* state, uint8_t* message, int length)
   process_post_synch(state->calling_process, mqtt_event, &event_data);
 }
 
+static void deliver_publish_continuation(mqtt_state_t* state, uint16_t offset, uint8_t* buffer, uint16_t length)
+{
+  mqtt_event_data_t event_data;
+
+  event_data.type = MQTT_EVENT_TYPE_PUBLISH_CONTINUATION;
+  event_data.topic_length = 0;
+  event_data.topic = NULL;
+  event_data.data_length = length;
+  event_data.data_offset = offset;
+  event_data.data = (char*)buffer;
+  ((char*)event_data.data)[event_data.data_length] = '\0';
+
+  process_post_synch(state->calling_process, mqtt_event, &event_data);
+}
+
 static PT_THREAD(handle_mqtt_connection(mqtt_state_t* state))
 {
   static struct etimer keepalive_timer;
@@ -267,6 +284,9 @@ static PT_THREAD(handle_mqtt_connection(mqtt_state_t* state))
     // read and process it.
     PSOCK_READBUF_LEN(&state->ps, 2);
     
+    state->message_length_read = PSOCK_DATALEN(&state->ps);
+    state->message_length = mqtt_get_total_length(state->in_buffer, state->message_length_read);
+
     msg_type = mqtt_get_type(state->in_buffer);
     msg_qos  = mqtt_get_qos(state->in_buffer);
     msg_id   = mqtt_get_id(state->in_buffer, state->in_buffer_length);
@@ -286,7 +306,7 @@ static PT_THREAD(handle_mqtt_connection(mqtt_state_t* state))
         else if(msg_qos == 2)
           state->outbound_message = mqtt_msg_pubrec(&state->mqtt_connection, msg_id);
 
-        deliver_publish(state, state->in_buffer, state->in_buffer_length);
+        deliver_publish(state, state->in_buffer, state->message_length_read);
         break;
       case MQTT_MSG_TYPE_PUBACK:
         if(state->pending_msg_type == MQTT_MSG_TYPE_PUBLISH && state->pending_msg_id == msg_id)
@@ -308,6 +328,32 @@ static PT_THREAD(handle_mqtt_connection(mqtt_state_t* state))
       case MQTT_MSG_TYPE_PINGRESP:
         // Ignore
         break;
+    }
+
+    // NOTE: this is done down here and not in the switch case above
+    //       because the PSOCK_READBUF_LEN() won't work inside a switch
+    //       statement due to the way protothreads resume.
+    if(msg_type == MQTT_MSG_TYPE_PUBLISH)
+    {
+      uint16_t len;
+
+      // adjust message_length and message_length_read so that
+      // they only account for the publish data and not the rest of the 
+      // message, this is done so that the offset passed with the
+      // continuation event is the offset within the publish data and
+      // not the offset within the message as a whole.
+      len = state->message_length_read;
+      mqtt_get_publish_data(state->in_buffer, &len);
+      len = state->message_length_read - len;
+      state->message_length -= len;
+      state->message_length_read -= len;
+
+      while(state->message_length_read < state->message_length)
+      {
+        PSOCK_READBUF_LEN(&state->ps, state->message_length - state->message_length_read);
+        deliver_publish_continuation(state, state->message_length_read, state->in_buffer, PSOCK_DATALEN(&state->ps));
+        state->message_length_read += PSOCK_DATALEN(&state->ps);
+      }
     }
   }
 
@@ -335,7 +381,8 @@ PROCESS_THREAD(mqtt_process, ev, data)
     else
       printf("mqtt: connected\n");
 
-    PSOCK_INIT(&mqtt_state.ps, mqtt_state.in_buffer, mqtt_state.in_buffer_length);
+    // reserve one byte at the end of the buffer so there's space to NULL terminate
+    PSOCK_INIT(&mqtt_state.ps, mqtt_state.in_buffer, mqtt_state.in_buffer_length - 1);
 
     handle_mqtt_connection(&mqtt_state);
 
