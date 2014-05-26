@@ -126,6 +126,25 @@ void mqtt_msg_init(mqtt_connection_t* connection, uint8_t* buffer, uint16_t buff
   connection->buffer_length = buffer_length;
 }
 
+int mqtt_get_total_length(uint8_t* buffer, uint16_t length)
+{
+  int i;
+  int totlen = 0;
+
+  for(i = 1; i < length; ++i)
+  {
+    totlen += (buffer[i] & 0x7f) << (7 * (i - 1));
+    if((buffer[i] & 0x80) == 0)
+    {
+      ++i;
+      break;
+    }
+  }
+  totlen += i;
+
+  return totlen;
+}
+
 const char* mqtt_get_publish_topic(uint8_t* buffer, uint16_t* length)
 {
   int i;
