@@ -134,7 +134,7 @@ const char* mqtt_get_publish_topic(uint8_t* buffer, uint16_t* length)
 
   for(i = 1; i < *length; ++i)
   {
-    totlen += buffer[i] & 0x7f;
+    totlen += (buffer[i] & 0x7f) << (7 * (i  -1));
     if((buffer[i] & 0x80) == 0)
     {
       ++i;
@@ -163,7 +163,7 @@ const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
 
   for(i = 1; i < *length; ++i)
   {
-    totlen += buffer[i] & 0x7f;
+    totlen += (buffer[i] & 0x7f) << (7 * (i - 1));
     if((buffer[i] & 0x80) == 0)
     {
       ++i;
@@ -191,7 +191,10 @@ const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
   if(totlen < i)
     return NULL;
 
-  *length = totlen - i;
+  if(totlen <= *length)
+    *length = totlen - i;
+  else
+    *length = *length - i;
   return (const char*)(buffer + i);
 }
 
