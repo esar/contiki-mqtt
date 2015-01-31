@@ -47,7 +47,7 @@ struct __attribute((__packed__)) mqtt_connect_variable_header
 {
   uint8_t lengthMsb;
   uint8_t lengthLsb;
-  uint8_t magic[6];
+  uint8_t magic[4];
   uint8_t version;
   uint8_t flags;
   uint8_t keepaliveMsb;
@@ -293,9 +293,9 @@ mqtt_message_t* mqtt_msg_connect(mqtt_connection_t* connection, mqtt_connect_inf
   connection->message.length += sizeof(*variable_header);
 
   variable_header->lengthMsb = 0;
-  variable_header->lengthLsb = 6;
-  memcpy(variable_header->magic, "MQIsdp", 6);
-  variable_header->version = 3;
+  variable_header->lengthLsb = 4;
+  memcpy(variable_header->magic, "MQTT", 4);
+  variable_header->version = 4;
   variable_header->flags = 0;
   variable_header->keepaliveMsb = info->keepalive >> 8;
   variable_header->keepaliveLsb = info->keepalive & 0xff;
