@@ -322,7 +322,7 @@ mqtt_message_t* mqtt_msg_connect(mqtt_connection_t* connection, mqtt_connect_inf
     variable_header->flags |= MQTT_CONNECT_FLAG_WILL;
     if(info->will_retain)
       variable_header->flags |= MQTT_CONNECT_FLAG_WILL_RETAIN;
-    variable_header->flags |= (info->will_qos & 3) << 4;
+    variable_header->flags |= (info->will_qos & 3) << 3;
   }
 
   if(info->username != NULL && info->username[0] != '\0')
