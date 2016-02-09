@@ -121,10 +121,8 @@ static mqtt_message_t* fini_message(mqtt_connection_t* connection, int type, int
 
 void mqtt_msg_init(mqtt_connection_t* connection, uint8_t* buffer, uint16_t buffer_length)
 {
-  memset(connection->message.data, 0, connection->message.length);
-  memset(connection->buffer, 0, connection->buffer_length);
+  memset(connection, 0, sizeof(mqtt_connection_t));
 
-  connection->message_id = 0;
   connection->buffer = buffer;
   connection->buffer_length = buffer_length;
 }
