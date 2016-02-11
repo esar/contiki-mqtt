@@ -31,6 +31,9 @@
 
 #include <stdint.h>
 
+#ifndef MQTT_MSG_H_
+#define MQTT_MSG_H_
+
 enum mqtt_message_type
 {
   MQTT_MSG_TYPE_CONNECT     = 1,
@@ -49,14 +52,14 @@ enum mqtt_message_type
   MQTT_MSG_TYPE_DISCONNECT  = 14
 };
 
-typedef struct mqtt_message
+typedef struct
 {
   uint8_t* data;
   uint16_t length;
 
 } mqtt_message_t;
 
-typedef struct mqtt_connection
+typedef struct
 {
   mqtt_message_t message;
 
@@ -104,3 +107,4 @@ mqtt_message_t* mqtt_msg_pingreq(mqtt_connection_t* connection);
 mqtt_message_t* mqtt_msg_pingresp(mqtt_connection_t* connection);
 mqtt_message_t* mqtt_msg_disconnect(mqtt_connection_t* connection);
 
+#endif
