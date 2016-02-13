@@ -29,6 +29,11 @@
  *
  */
 
+#ifndef MQTT_SERVICE_H_
+#define MQTT_SERVICE_H_
+
+#include <stdio.h>
+#include "uip.h"
 #include "mqtt-msg.h"
 
 #define MQTT_FLAG_CONNECTED          1
@@ -178,4 +183,4 @@ static inline uint16_t mqtt_event_get_data_offset(void* data)
   return ((mqtt_event_data_t*)data)->data_offset;
 }
 
-
+#endif
