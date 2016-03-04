@@ -98,7 +98,7 @@ int mqtt_connect(uip_ip6addr_t* address, uint16_t port, int auto_reconnect, mqtt
   mqtt_state.auto_reconnect = auto_reconnect;
   mqtt_state.connect_info = info;
   mqtt_state.calling_process = PROCESS_CURRENT();
-  process_start(&mqtt_process, (char*)&mqtt_state);
+  process_start(&mqtt_process, (void*)&mqtt_state);
 
   return 0;
 }
