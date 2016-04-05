@@ -179,8 +179,10 @@ const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
   int i;
   int totlen = 0;
   int topiclen;
+  int blength = *length;
+  *length = 0;
 
-  for(i = 1; i < *length; ++i)
+  for(i = 1; i < blength; ++i)
   {
     totlen += (buffer[i] & 0x7f) << (7 * (i - 1));
     if((buffer[i] & 0x80) == 0)
@@ -191,22 +193,19 @@ const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
   }
   totlen += i;
   
-  if(i + 2 >= *length)
+  if(i + 2 >= blength)
     return NULL;
   topiclen  = buffer[i++] << 8;
   topiclen |= buffer[i++];
 
-  if(i + topiclen >= *length)
-  {
-    *length = 0;
-    return NULL;	
-  }
-  
+  if(i + topiclen >= blength)
+    return NULL;
+
   i += topiclen;
 
   if(mqtt_get_qos(buffer) > 0)
   {
-    if(i + 2 >= *length)
+    if(i + 2 >= blength)
       return NULL;
     i += 2;
   }
@@ -214,10 +213,10 @@ const char* mqtt_get_publish_data(uint8_t* buffer, uint16_t* length)
   if(totlen < i)
     return NULL;
 
-  if(totlen <= *length)
+  if(totlen <= blength)
     *length = totlen - i;
   else
-    *length = *length - i;
+    *length = blength - i;
   return (const char*)(buffer + i);
 }
 
